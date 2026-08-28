@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Admin Dashboard - Sentinel</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: "#10b981",
+                        amber: "#f59e0b",
+                        admin: "#8b5cf6" // Purple for admin
+                    },
+                    fontFamily: {
+                        "headline": ["Public Sans"],
+                        "body": ["Public Sans"],
+                        "label": ["Atkinson Hyperlegible Next"]
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+        
+        .glass-input {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #0f172a !important;
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+            background: rgba(255, 255, 255, 1);
+        }
+
+        body {
+            background: radial-gradient(circle at top right, #f8fafc, #e2e8f0);
+            background-attachment: fixed;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body class="font-body min-h-screen pt-20 pb-12 antialiased">
+    <header class="fixed top-0 w-full z-50 glass-panel border-b border-slate-200 h-16 flex items-center justify-between px-6">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-admin/10 text-admin flex items-center justify-center border border-admin/30">
+                <span class="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+            </div>
+            <span class="font-headline font-bold text-lg text-slate-900 tracking-wide">Sentinel Admin</span>
+        </div>
+        <div class="flex items-center gap-6">
+            <button id="view-civilian-btn" class="hidden sm:flex text-slate-600 hover:text-emerald transition-colors text-sm font-bold tracking-wider uppercase items-center gap-1 border-r border-slate-300 pr-6">
+                <span class="material-symbols-outlined text-[18px]">group</span> Civilian Portal
+            </button>
+            <button id="view-feed-btn" class="text-slate-600 hover:text-admin transition-colors text-sm font-bold tracking-wider uppercase flex items-center gap-1">
+                <span class="material-symbols-outlined text-[18px]">list_alt</span> Live Feed
+            </button>
+            <button id="logout-btn" class="text-slate-500 hover:text-red-500 transition-colors text-sm font-bold tracking-wider uppercase flex items-center gap-1">
+                Logout <span class="material-symbols-outlined text-[18px]">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-6 mt-8 animate-fade-in">
+        <div class="mb-10">
+            <h1 class="font-headline text-3xl font-bold text-slate-900 mb-1">Super Admin Dashboard</h1>
+            <p class="text-slate-600 text-sm font-label tracking-wide">Manage officer accounts and system access.</p>
+        </div>
+
+        <section class="glass-panel rounded-2xl p-8 shadow-xl relative overflow-hidden mb-8">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-admin to-purple-400"></div>
+            
+            <h2 class="font-headline text-xl font-bold text-slate-900 mb-6 flex items-center gap-2 border-b border-slate-200 pb-4">
+                <span class="material-symbols-outlined text-admin">person_add</span>
+                Create Officer Account
+            </h2>
+
+            <div id="status-msg" class="hidden mb-6 px-4 py-3 rounded-lg text-sm font-label text-center"></div>
+
+            <form id="create-officer-form" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Officer Email</label>
+                        <input type="email" id="officer-email" class="glass-input w-full rounded-lg px-4 py-3" placeholder="officer@police.gov.jm" required/>
+                    </div>
+                    <div>
+                        <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Temporary Password</label>
+                        <input type="password" id="officer-password" class="glass-input w-full rounded-lg px-4 py-3" required minlength="6"/>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Jurisdiction (Parish)</label>
+                    <select id="officer-jurisdiction" class="glass-input w-full rounded-lg px-4 py-3" required>
+                        <option value="" disabled selected>Select assigned parish</option>
+                        <option value="Kingston">Kingston</option>
+                        <option value="St. Andrew">St. Andrew</option>
+                        <option value="St. Thomas">St. Thomas</option>
+                        <option value="Portland">Portland</option>
+                        <option value="St. Mary">St. Mary</option>
+                        <option value="St. Ann">St. Ann</option>
+                        <option value="Trelawny">Trelawny</option>
+                        <option value="St. James">St. James</option>
+                        <option value="Hanover">Hanover</option>
+                        <option value="Westmoreland">Westmoreland</option>
+                        <option value="St. Elizabeth">St. Elizabeth</option>
+                        <option value="Manchester">Manchester</option>
+                        <option value="Clarendon">Clarendon</option>
+                        <option value="St. Catherine">St. Catherine</option>
+                        <option value="National">National (All Parishes)</option>
+                    </select>
+                </div>
+
+                <div class="pt-4 border-t border-slate-200 flex justify-end">
+                    <button type="submit" id="submit-btn" class="bg-admin text-white font-bold font-label px-8 py-3 rounded-lg hover:bg-admin/90 transition-all shadow-md flex items-center gap-2">
+                        Create Account
+                        <span class="material-symbols-outlined text-[18px]">add</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Officer List -->
+        <section class="glass-panel rounded-2xl shadow-xl overflow-hidden">
+            <div class="p-6 border-b border-slate-200 bg-slate-50">
+                <div class="flex justify-between items-center">
+                    <h2 class="font-headline text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-admin">badge</span>
+                        Active Officers
+                    </h2>
+                    <button id="refresh-btn" class="text-slate-500 hover:text-admin transition-colors" title="Refresh List">
+                        <span class="material-symbols-outlined">refresh</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-0 bg-white">
+                <ul id="officer-list" class="divide-y divide-slate-100">
+                    <li class="p-8 text-center text-slate-500 font-label">
+                        <span class="material-symbols-outlined animate-spin text-3xl mb-2">autorenew</span>
+                        <p>Loading officers...</p>
+                    </li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
+        import { auth, apiFetch, signOut } from './firebase-config.js';
+
+        const form = document.getElementById('create-officer-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const statusMsg = document.getElementById('status-msg');
+        const officerList = document.getElementById('officer-list');
+
+        function showStatus(msg, isError = false) {
+            statusMsg.textContent = msg;
+            statusMsg.className = `mb-6 px-4 py-3 rounded-lg text-sm font-label text-center border ${
+                isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+            }`;
+            statusMsg.classList.remove('hidden');
+        }
+
+        window.updateRole = async function(uid, selectElem) {
+            const newRole = selectElem.value;
+            const originalValue = selectElem.getAttribute('data-original');
+            
+            if (newRole === originalValue) return;
+            if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
+                selectElem.value = originalValue;
+                return;
+            }
+
+            selectElem.disabled = true;
+            try {
+                // Fetch current user jurisdiction or default to Unknown
+                const response = await apiFetch(`http://localhost:8000/api/admin/users/${uid}/role`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ role: newRole, jurisdiction: 'National' }) // Simplified for demo
+                });
+                if (!response.ok) throw new Error("Failed to update role");
+                showStatus(`Successfully updated role to ${newRole}`);
+                selectElem.setAttribute('data-original', newRole);
+            } catch (err) {
+                showStatus(err.message, true);
+                selectElem.value = originalValue;
+            } finally {
+                selectElem.disabled = false;
+            }
+        }
+
+        async function loadOfficers() {
+            try {
+                const response = await apiFetch('http://localhost:8000/api/admin/officers');
+                if (!response.ok) throw new Error("Failed to load officers");
+                
+                const data = await response.json();
+                officerList.innerHTML = '';
+                
+                if (data.officers.length === 0) {
+                    officerList.innerHTML = '<li class="p-8 text-center text-slate-500 font-label">No users found.</li>';
+                } else {
+                    data.officers.forEach(user => {
+                        const li = document.createElement('li');
+                        li.className = "p-4 flex items-center justify-between hover:bg-slate-50 transition-colors flex-col sm:flex-row gap-4";
+                        li.innerHTML = `
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-slate-500 bg-slate-100 p-2 rounded-full border border-slate-200">
+                                    ${user.role === 'admin' ? 'admin_panel_settings' : user.role === 'officer' ? 'local_police' : 'person'}
+                                </span>
+                                <div>
+                                    <p class="font-bold text-slate-900 text-sm">${user.email}</p>
+                                    <p class="text-xs text-slate-500 font-mono">UID: ${user.uid}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Rank:</label>
+                                <select class="glass-input rounded px-2 py-1 text-sm cursor-pointer" data-original="${user.role}" onchange="updateRole('${user.uid}', this)">
+                                    <option value="civilian" ${user.role === 'civilian' ? 'selected' : ''}>Civilian</option>
+                                    <option value="officer" ${user.role === 'officer' ? 'selected' : ''}>Officer</option>
+                                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                                </select>
+                            </div>
+                        `;
+                        officerList.appendChild(li);
+                    });
+                }
+            } catch (err) {
+                officerList.innerHTML = `<li class="p-8 text-center text-red-500 font-label">Error: ${err.message}</li>`;
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            statusMsg.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">autorenew</span>';
+
+            const email = document.getElementById('officer-email').value;
+            const password = document.getElementById('officer-password').value;
+            const jurisdiction = document.getElementById('officer-jurisdiction').value;
+
+            try {
+                const response = await apiFetch('http://localhost:8000/api/admin/officers', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password, jurisdiction })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || "Creation failed");
+
+                showStatus(`Successfully created officer account for ${email} (${jurisdiction})`);
+                form.reset();
+                loadOfficers();
+            } catch (err) {
+                showStatus(err.message, true);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Create Account <span class="material-symbols-outlined text-[18px]">add</span>';
+            }
+        });
+
+        document.getElementById('refresh-btn').addEventListener('click', loadOfficers);
+        
+        document.getElementById('view-feed-btn').addEventListener('click', () => {
+            window.location.href = 'officer_feed.html';
+        });
+
+        document.getElementById('view-civilian-btn').addEventListener('click', () => {
+            window.location.href = 'civilian_dashboard.html';
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth).then(() => window.location.href = 'login.html');
+        });
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                loadOfficers();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+</body>
+</html>

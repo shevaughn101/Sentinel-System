@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Review & Submit - Sentinel Civic Response</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: "#10b981",
+                        amber: "#f59e0b"
+                    },
+                    fontFamily: {
+                        "headline": ["Public Sans"],
+                        "body": ["Public Sans"],
+                        "label": ["Atkinson Hyperlegible Next"]
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-in': 'slideIn 0.4s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateX(20px)', opacity: '0' },
+                            '100%': { transform: 'translateX(0)', opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+        
+        body {
+            background: radial-gradient(circle at top right, #f8fafc, #e2e8f0);
+            background-attachment: fixed;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body class="font-body min-h-screen pb-12 pt-20 antialiased">
+    <!-- Civilian Navigation -->
+    <header class="fixed top-0 w-full z-50 glass-panel border-b border-slate-200 h-16 px-6 flex items-center justify-between">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='civilian_dashboard.html'">
+                <div class="w-8 h-8 rounded-full bg-emerald text-white flex items-center justify-center shadow-md">
+                    <span class="material-symbols-outlined text-[20px]">security</span>
+                </div>
+                <span class="font-headline font-bold text-lg text-slate-900 tracking-wide hidden sm:block">Sentinel System</span>
+            </div>
+            
+            <nav class="hidden md:flex gap-6">
+                <a href="civilian_dashboard.html" class="text-slate-600 hover:text-emerald font-label font-bold text-sm uppercase tracking-wider flex items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">home</span> Home
+                </a>
+                <a href="civilian_dashboard.html" class="text-slate-600 hover:text-emerald font-label font-bold text-sm uppercase tracking-wider flex items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">history</span> Past Incidents
+                </a>
+                <a href="civilian_profile.html" class="text-slate-600 hover:text-emerald font-label font-bold text-sm uppercase tracking-wider flex items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">person</span> Profile
+                </a>
+                <a href="#" id="portal-link-desktop" class="text-slate-600 hover:text-emerald font-label font-bold text-sm uppercase tracking-wider flex items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span> Management
+                </a>
+            </nav>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button id="mobile-menu-btn" class="md:hidden text-slate-600 hover:text-emerald transition-colors">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <button id="cancel-btn" class="text-slate-500 hover:text-red-500 transition-colors text-sm font-bold tracking-wider uppercase flex items-center gap-1">
+                Cancel
+                <span class="material-symbols-outlined text-sm">close</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="hidden fixed inset-0 z-40 bg-white/95 backdrop-blur-md pt-20 px-6">
+        <nav class="flex flex-col gap-6 text-center">
+            <a href="civilian_dashboard.html" class="text-slate-800 font-headline font-bold text-2xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl">home</span> Home
+            </a>
+            <a href="civilian_dashboard.html" class="text-slate-800 font-headline font-bold text-2xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl">history</span> Past Incidents
+            </a>
+            <a href="civilian_profile.html" class="text-slate-800 font-headline font-bold text-2xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl">person</span> Profile
+            </a>
+            <a href="#" id="portal-link-mobile" class="text-slate-800 font-headline font-bold text-2xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl">admin_panel_settings</span> Management
+            </a>
+            <button id="mobile-logout-btn" class="mt-8 text-red-500 font-headline font-bold text-xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-2xl">logout</span> Logout
+            </button>
+        </nav>
+    </div>
+
+    <main class="max-w-[1440px] mx-auto px-6 mt-4 pb-20 animate-fade-in">
+        <!-- Progress Tracker -->
+        <div class="mb-12 max-w-2xl mx-auto">
+            <div class="flex justify-between items-center relative">
+                <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-emerald -z-10 rounded-full shadow-sm"></div>
+                <!-- Step 1 -->
+                <div class="flex flex-col items-center gap-2 px-2" style="background: transparent;">
+                    <div class="w-10 h-10 rounded-full bg-emerald text-white flex items-center justify-center font-bold shadow-md">
+                        <span class="material-symbols-outlined text-[20px]">check</span>
+                    </div>
+                    <span class="font-label text-xs text-emerald font-bold uppercase tracking-wider">Describe</span>
+                </div>
+                <!-- Step 2 -->
+                <div class="flex flex-col items-center gap-2 px-2" style="background: transparent;">
+                    <div class="w-10 h-10 rounded-full bg-emerald text-white flex items-center justify-center font-bold shadow-md">
+                        <span class="material-symbols-outlined text-[20px]">check</span>
+                    </div>
+                    <span class="font-label text-xs text-emerald font-bold uppercase tracking-wider">Evidence</span>
+                </div>
+                <!-- Step 3 -->
+                <div class="flex flex-col items-center gap-2 px-2" style="background: transparent;">
+                    <div class="w-10 h-10 rounded-full bg-emerald text-white flex items-center justify-center font-bold shadow-md">3</div>
+                    <span class="font-label text-xs text-emerald font-bold uppercase tracking-wider">Review</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-6xl mx-auto">
+            <!-- Left Column: Form Details -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                <!-- Details -->
+                <section class="glass-panel rounded-2xl p-8 shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-emerald"></div>
+                    
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-4">
+                        <h3 class="font-headline text-xl font-bold text-slate-900 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald">summarize</span>
+                            Incident Summary
+                        </h3>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <p class="font-label text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Incident Type</p>
+                                <p id="disp-type" class="text-slate-900 font-body text-lg font-medium"></p>
+                            </div>
+                            <div>
+                                <p class="font-label text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Jurisdiction / Parish</p>
+                                <p id="disp-jur" class="text-slate-900 font-body text-lg font-medium flex items-center gap-1"><span class="material-symbols-outlined text-emerald text-[18px]">map</span> <span id="jur-text"></span></p>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="font-label text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Specific Location</p>
+                            <p id="disp-location" class="text-slate-700 font-body flex items-start gap-1"><span class="material-symbols-outlined text-slate-400 text-[18px] mt-0.5">location_on</span> <span id="loc-text"></span></p>
+                        </div>
+                        
+                        <!-- Vehicle Details -->
+                        <div id="veh-container" class="hidden">
+                            <p class="font-label text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 border-t border-slate-200 pt-4 mt-2">Vehicle Details</p>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                                <div><span class="text-slate-500 block text-xs">Plate</span><span id="v-plate" class="font-bold text-slate-800"></span></div>
+                                <div><span class="text-slate-500 block text-xs">Make/Model</span><span id="v-make" class="font-bold text-slate-800"></span></div>
+                                <div><span class="text-slate-500 block text-xs">Color</span><span id="v-color" class="font-bold text-slate-800"></span></div>
+                                <div class="col-span-2"><span class="text-slate-500 block text-xs">VIN</span><span id="v-vin" class="font-bold text-slate-800 font-mono text-xs"></span></div>
+                            </div>
+                        </div>
+
+                        <!-- Witness Details -->
+                        <div id="wit-container" class="hidden">
+                            <p class="font-label text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 border-t border-slate-200 pt-4 mt-2">Witness Details</p>
+                            <div id="witness-list" class="space-y-2"></div>
+                        </div>
+
+                        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                            <p class="font-label text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Description</p>
+                            <p id="disp-desc" class="text-slate-700 font-body whitespace-pre-wrap leading-relaxed"></p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Evidence Preview -->
+                <section class="glass-panel rounded-2xl p-8 shadow-xl relative overflow-hidden">
+                    <h3 class="font-headline text-lg font-bold text-slate-900 flex items-center gap-2 mb-6 border-b border-slate-200 pb-4">
+                        <span class="material-symbols-outlined text-emerald">photo_library</span>
+                        Attached Evidence
+                    </h3>
+                    <div id="evidence-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        <p id="no-evidence" class="text-sm text-slate-500 col-span-full italic">No evidence uploaded.</p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column: Legal & Actions -->
+            <div class="lg:col-span-4">
+                <div class="sticky top-24 flex flex-col gap-6 animate-slide-in">
+                    <section class="glass-panel rounded-2xl p-6 shadow-xl border border-emerald/20 bg-emerald/5 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-emerald/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                        <h3 class="font-headline text-lg font-bold text-emerald flex items-center gap-2 mb-3">
+                            <span class="material-symbols-outlined">gavel</span> Legal Declaration
+                        </h3>
+                        <p class="text-sm text-slate-700 mb-6 leading-relaxed">
+                            Filing a false civic report is a punishable offense. By submitting, you affirm this data is accurate and agree to securely transmit it to authorities.
+                        </p>
+                        <label class="flex items-start gap-3 cursor-pointer group bg-white p-3 rounded-lg border border-slate-200 hover:border-emerald/50 transition-colors shadow-sm">
+                            <input type="checkbox" id="certify-checkbox" class="mt-0.5 rounded border-slate-300 text-emerald focus:ring-emerald cursor-pointer"/>
+                            <span class="font-label text-sm text-slate-700 select-none group-hover:text-slate-900 transition-colors">
+                                I certify that the information provided is true and accurate.
+                            </span>
+                        </label>
+                    </section>
+                    
+                    <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-label text-center"></div>
+                    <div id="success-message" class="hidden bg-emerald/10 border border-emerald/30 text-emerald-700 px-4 py-3 rounded-lg text-sm font-label text-center flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        Report Submitted!
+                    </div>
+
+                    <div class="flex flex-col gap-3">
+                        <button id="submit-btn" disabled class="w-full bg-emerald text-white font-bold font-label py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-emerald shadow-md">
+                            <span class="material-symbols-outlined text-[20px]">lock</span> 
+                            <span class="tracking-wide">Submit Secure Report</span>
+                        </button>
+                        <button id="back-btn" class="w-full bg-white border border-slate-300 text-slate-700 font-bold font-label py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors shadow-sm">
+                            <span class="material-symbols-outlined text-[18px]">arrow_back</span> Go Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { auth, apiFetch, signOut } from './firebase-config.js';
+
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        document.getElementById('mobile-logout-btn').addEventListener('click', () => {
+            signOut(auth).then(() => window.location.href = 'login.html');
+        });
+
+        const handlePortalSwitch = async (e) => {
+            e.preventDefault();
+            const user = auth.currentUser;
+            if (user) {
+                try {
+                    const tokenResult = await user.getIdTokenResult();
+                    const role = tokenResult.claims.role || 'civilian';
+                    if (role === 'admin') {
+                        window.location.href = 'admin_dashboard.html';
+                    } else if (role === 'officer') {
+                        window.location.href = 'officer_feed.html';
+                    } else {
+                        alert("Access Denied: You do not have permission to access the management portal.");
+                    }
+                } catch (err) {}
+            }
+        };
+        
+        const pd = document.getElementById('portal-link-desktop');
+        if (pd) pd.addEventListener('click', handlePortalSwitch);
+        const pm = document.getElementById('portal-link-mobile');
+        if (pm) pm.addEventListener('click', handlePortalSwitch);
+
+        const statDocs = JSON.parse(sessionStorage.getItem('statutoryDocs') || '[]');
+        const scenePhotos = JSON.parse(sessionStorage.getItem('scenePhotos') || '[]');
+        const vehDetails = JSON.parse(sessionStorage.getItem('vehicleDetails') || '{}');
+        const witnesses = JSON.parse(sessionStorage.getItem('witnesses') || '[]');
+
+        const incType = sessionStorage.getItem('incidentType') || 'Not provided';
+        const incLoc = sessionStorage.getItem('incidentLocation') || 'Not provided';
+        const incJur = sessionStorage.getItem('incidentJurisdiction') || 'Unknown';
+        const incDesc = sessionStorage.getItem('incidentDesc') || 'Not provided';
+
+        document.getElementById('disp-type').textContent = incType;
+        document.getElementById('jur-text').textContent = incJur;
+        document.getElementById('loc-text').textContent = incLoc;
+        document.getElementById('disp-desc').textContent = incDesc;
+
+        // Vehicle
+        if (vehDetails.plate || vehDetails.vin) {
+            document.getElementById('veh-container').classList.remove('hidden');
+            document.getElementById('v-plate').textContent = vehDetails.plate || 'N/A';
+            document.getElementById('v-make').textContent = (vehDetails.make || '') + ' ' + (vehDetails.model || '');
+            document.getElementById('v-color').textContent = vehDetails.color || 'N/A';
+            document.getElementById('v-vin').textContent = vehDetails.vin || 'N/A';
+        }
+
+        // Witnesses
+        if (witnesses.length > 0) {
+            document.getElementById('wit-container').classList.remove('hidden');
+            const wl = document.getElementById('witness-list');
+            witnesses.forEach(w => {
+                wl.innerHTML += `<p class="text-sm text-slate-800"><span class="font-bold">${w.name || 'Anonymous'}</span> &bull; ${w.phone || 'No phone'}</p>`;
+            });
+        }
+
+        const evidenceContainer = document.getElementById('evidence-container');
+        const allFiles = [...statDocs, ...scenePhotos];
+        
+        if (allFiles.length > 0) {
+            document.getElementById('no-evidence').classList.add('hidden');
+            allFiles.forEach(file => {
+                const div = document.createElement('div');
+                div.className = "aspect-square rounded-xl bg-slate-50 border border-slate-200 flex flex-col items-center justify-center p-3 text-center overflow-hidden hover:border-emerald/30 transition-colors relative group";
+                
+                let icon = 'description';
+                if (file.type && file.type.startsWith('image/')) icon = 'image';
+                else if (file.type === 'application/pdf') icon = 'picture_as_pdf';
+
+                div.innerHTML = `
+                    <span class="material-symbols-outlined text-4xl text-emerald mb-2 opacity-80">${icon}</span>
+                    <span class="text-xs font-mono text-slate-600 truncate w-full">${file.name}</span>
+                    <div class="absolute inset-0 bg-slate-900/90 text-white p-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center text-xs text-left break-all overflow-y-auto z-10 pointer-events-none">
+                        <span class="font-bold text-emerald mb-1">SHA-256 Hash:</span>
+                        <span class="font-mono text-[10px] leading-tight text-slate-300">${file.hash}</span>
+                    </div>
+                `;
+                evidenceContainer.appendChild(div);
+            });
+        }
+
+        const checkbox = document.getElementById('certify-checkbox');
+        const submitBtn = document.getElementById('submit-btn');
+        const errorMsg = document.getElementById('error-message');
+        const successMsg = document.getElementById('success-message');
+
+        checkbox.addEventListener('change', (e) => {
+            submitBtn.disabled = !e.target.checked;
+        });
+
+        submitBtn.addEventListener('click', async () => {
+            errorMsg.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[20px]">autorenew</span> <span class="tracking-wide">Encrypting & Submitting...</span>';
+
+            const payload = {
+                type: incType,
+                location: incLoc,
+                jurisdiction: incJur,
+                description: incDesc,
+                timestamp: new Date().toISOString(),
+                vehicleDetails: vehDetails,
+                witnesses: witnesses,
+                statutoryDocs: statDocs,
+                scenePhotos: scenePhotos
+            };
+
+            try {
+                const response = await apiFetch('http://localhost:8000/api/incidents', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || "Submission failed");
+                }
+
+                sessionStorage.removeItem('incidentType');
+                sessionStorage.removeItem('incidentLocation');
+                sessionStorage.removeItem('incidentJurisdiction');
+                sessionStorage.removeItem('incidentDesc');
+                sessionStorage.removeItem('statutoryDocs');
+                sessionStorage.removeItem('scenePhotos');
+                sessionStorage.removeItem('vehicleDetails');
+                sessionStorage.removeItem('witnesses');
+                
+                successMsg.classList.remove('hidden');
+                submitBtn.classList.add('hidden');
+                document.getElementById('back-btn').classList.add('hidden');
+                
+                setTimeout(() => {
+                    window.location.href = 'civilian_dashboard.html';
+                }, 2000);
+
+            } catch (err) {
+                errorMsg.textContent = err.message;
+                errorMsg.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">lock</span> <span class="tracking-wide">Submit Secure Report</span>';
+            }
+        });
+
+        document.getElementById('back-btn').addEventListener('click', () => {
+            window.location.href = 'civilian_upload.html';
+        });
+
+        document.getElementById('cancel-btn').addEventListener('click', () => {
+            if (confirm("Are you sure you want to cancel? Your progress will be lost.")) {
+                window.location.href = 'civilian_dashboard.html';
+            }
+        });
+
+        auth.onAuthStateChanged(user => {
+            if (!user) window.location.href = 'login.html';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>My Profile - Sentinel Civic Response</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: "#10b981",
+                        amber: "#f59e0b"
+                    },
+                    fontFamily: {
+                        "headline": ["Public Sans"],
+                        "body": ["Public Sans"],
+                        "label": ["Atkinson Hyperlegible Next"]
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+        
+        body {
+            background: radial-gradient(circle at top right, #f8fafc, #e2e8f0);
+            background-attachment: fixed;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body class="font-body min-h-screen pt-20 pb-12 antialiased">
+    <!-- Civilian Navigation -->
+    <header class="fixed top-0 w-full z-50 glass-panel border-b border-slate-200 h-16 px-6 flex items-center justify-between">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='civilian_dashboard.html'">
+                <div class="w-8 h-8 rounded-full bg-emerald text-white flex items-center justify-center shadow-md">
+                    <span class="material-symbols-outlined text-[20px]">security</span>
+                </div>
+                <span class="font-headline font-bold text-lg text-slate-900 tracking-wide hidden sm:block">Sentinel System</span>
+            </div>
+            
+            <nav class="hidden md:flex gap-6">
+                <a href="civilian_dashboard.html" class="text-slate-600 hover:text-emerald font-label font-bold text-sm uppercase tracking-wider flex items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">home</span> Home
+                </a>
+                <a href="civilian_dashboard.html" class="text-slate-600 hover:text-emerald font-label font-bold text-sm uppercase tracking-wider flex items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">history</span> Past Incidents
+                </a>
+                <a href="civilian_profile.html" class="text-emerald font-label font-bold text-sm uppercase tracking-wider flex items-center gap-1 transition-colors border-b-2 border-emerald pb-1">
+                    <span class="material-symbols-outlined text-[18px]">person</span> Profile
+                </a>
+                <a href="#" id="portal-link-desktop" class="text-slate-600 hover:text-emerald font-label font-bold text-sm uppercase tracking-wider flex items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span> Management
+                </a>
+            </nav>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <!-- Mobile Menu Toggle -->
+            <button id="mobile-menu-btn" class="md:hidden text-slate-600 hover:text-emerald transition-colors">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <button id="logout-btn" class="hidden md:flex text-slate-500 hover:text-red-500 transition-colors text-sm font-bold tracking-wider uppercase items-center gap-1">
+                Logout <span class="material-symbols-outlined text-[18px]">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="hidden fixed inset-0 z-40 bg-white/95 backdrop-blur-md pt-20 px-6">
+        <nav class="flex flex-col gap-6 text-center">
+            <a href="civilian_dashboard.html" class="text-slate-800 font-headline font-bold text-2xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl">home</span> Home
+            </a>
+            <a href="civilian_dashboard.html" class="text-slate-800 font-headline font-bold text-2xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl">history</span> Past Incidents
+            </a>
+            <a href="civilian_profile.html" class="text-emerald font-headline font-bold text-2xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl">person</span> Profile
+            </a>
+            <a href="#" id="portal-link-mobile" class="text-slate-800 font-headline font-bold text-2xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl">admin_panel_settings</span> Management
+            </a>
+            <button id="mobile-logout-btn" class="mt-8 text-red-500 font-headline font-bold text-xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-2xl">logout</span> Logout
+            </button>
+        </nav>
+    </div>
+
+    <main class="max-w-3xl mx-auto px-6 mt-8 animate-fade-in">
+        <div class="mb-10 text-center">
+            <div class="w-24 h-24 mx-auto bg-slate-200 text-slate-500 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                <span class="material-symbols-outlined text-5xl">person</span>
+            </div>
+            <h1 class="font-headline text-3xl font-bold text-slate-900 mb-1">My Profile</h1>
+            <p class="text-slate-600 text-sm font-label tracking-wide">Manage your account details.</p>
+        </div>
+
+        <section class="glass-panel rounded-2xl shadow-lg p-8 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-emerald"></div>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block font-label text-xs font-bold mb-1 uppercase tracking-wider text-slate-500">Email Address</label>
+                    <p id="profile-email" class="text-slate-900 font-body text-lg font-medium">Loading...</p>
+                </div>
+                <div>
+                    <label class="block font-label text-xs font-bold mb-1 uppercase tracking-wider text-slate-500">Account Type</label>
+                    <p class="text-slate-900 font-body flex items-center gap-2">
+                        <span id="profile-role" class="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm font-bold border border-slate-200">Civilian</span>
+                    </p>
+                </div>
+                <div>
+                    <label class="block font-label text-xs font-bold mb-1 uppercase tracking-wider text-slate-500">Member Since</label>
+                    <p id="profile-created" class="text-slate-700 font-body">Loading...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
+        import { auth, signOut } from './firebase-config.js';
+
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                document.getElementById('profile-email').textContent = user.email;
+                document.getElementById('profile-created').textContent = new Date(parseInt(user.metadata.createdAt)).toLocaleDateString();
+                try {
+                    const tokenResult = await user.getIdTokenResult();
+                    const role = tokenResult.claims.role || 'civilian';
+                    const roleSpan = document.getElementById('profile-role');
+                    roleSpan.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+                    if (role === 'admin') {
+                        roleSpan.className = "bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold border border-purple-200";
+                    } else if (role === 'officer') {
+                        roleSpan.className = "bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-bold border border-amber-200";
+                    }
+                } catch(e) {}
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        const handleLogout = () => {
+            signOut(auth).then(() => window.location.href = 'login.html');
+        };
+
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+        const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+        if (mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', handleLogout);
+
+        const handlePortalSwitch = async (e) => {
+            e.preventDefault();
+            const user = auth.currentUser;
+            if (user) {
+                try {
+                    const tokenResult = await user.getIdTokenResult();
+                    const role = tokenResult.claims.role || 'civilian';
+                    if (role === 'admin') {
+                        window.location.href = 'admin_dashboard.html';
+                    } else if (role === 'officer') {
+                        window.location.href = 'officer_feed.html';
+                    } else {
+                        alert("Access Denied: You do not have permission to access the management portal.");
+                    }
+                } catch (err) {}
+            }
+        };
+        
+        const pd = document.getElementById('portal-link-desktop');
+        if (pd) pd.addEventListener('click', handlePortalSwitch);
+        const pm = document.getElementById('portal-link-mobile');
+        if (pm) pm.addEventListener('click', handlePortalSwitch);
+
+    </script>
+</body>
+</html>

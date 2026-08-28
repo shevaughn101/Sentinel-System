@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Describe Incident - Sentinel Civic Response</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: "#10b981",
+                        amber: "#f59e0b"
+                    },
+                    fontFamily: {
+                        "headline": ["Public Sans"],
+                        "body": ["Public Sans"],
+                        "label": ["Atkinson Hyperlegible Next"]
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+        
+        .glass-input {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #0f172a !important;
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+            background: rgba(255, 255, 255, 1);
+        }
+
+        body {
+            background: radial-gradient(circle at top right, #f8fafc, #e2e8f0);
+            background-attachment: fixed;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body class="font-body min-h-screen pb-12 pt-20 antialiased">
+    <!-- Civilian Navigation -->
+    <header class="fixed top-0 w-full z-50 glass-panel border-b border-slate-200 h-16 px-6 flex items-center justify-between">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='civilian_dashboard.html'">
+                <div class="w-8 h-8 rounded-full bg-emerald text-white flex items-center justify-center shadow-md">
+                    <span class="material-symbols-outlined text-[20px]">security</span>
+                </div>
+                <span class="font-headline font-bold text-lg text-slate-900 tracking-wide hidden sm:block">Sentinel System</span>
+            </div>
+            
+            <nav class="hidden md:flex gap-6">
+                <a href="civilian_dashboard.html" class="text-slate-600 hover:text-emerald font-label font-bold text-sm uppercase tracking-wider flex items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">home</span> Home
+                </a>
+                <a href="civilian_dashboard.html" class="text-slate-600 hover:text-emerald font-label font-bold text-sm uppercase tracking-wider flex items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">history</span> Past Incidents
+                </a>
+                <a href="civilian_profile.html" class="text-slate-600 hover:text-emerald font-label font-bold text-sm uppercase tracking-wider flex items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">person</span> Profile
+                </a>
+                <a href="#" id="portal-link-desktop" class="text-slate-600 hover:text-emerald font-label font-bold text-sm uppercase tracking-wider flex items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span> Management
+                </a>
+            </nav>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button id="mobile-menu-btn" class="md:hidden text-slate-600 hover:text-emerald transition-colors">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <button id="cancel-btn" class="text-slate-500 hover:text-red-500 transition-colors text-sm font-bold tracking-wider uppercase flex items-center gap-1">
+                Cancel
+                <span class="material-symbols-outlined text-sm">close</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="hidden fixed inset-0 z-40 bg-white/95 backdrop-blur-md pt-20 px-6">
+        <nav class="flex flex-col gap-6 text-center">
+            <a href="civilian_dashboard.html" class="text-slate-800 font-headline font-bold text-2xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl">home</span> Home
+            </a>
+            <a href="civilian_dashboard.html" class="text-slate-800 font-headline font-bold text-2xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl">history</span> Past Incidents
+            </a>
+            <a href="civilian_profile.html" class="text-slate-800 font-headline font-bold text-2xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl">person</span> Profile
+            </a>
+            <a href="#" id="portal-link-mobile" class="text-slate-800 font-headline font-bold text-2xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl">admin_panel_settings</span> Management
+            </a>
+            <button id="mobile-logout-btn" class="mt-8 text-red-500 font-headline font-bold text-xl flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-2xl">logout</span> Logout
+            </button>
+        </nav>
+    </div>
+
+    <main class="max-w-[1440px] mx-auto px-6 mt-4 pb-20 animate-fade-in">
+        <!-- Progress Tracker -->
+        <div class="mb-12 max-w-2xl mx-auto">
+            <div class="flex justify-between items-center relative">
+                <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-200 -z-10 rounded-full"></div>
+                <!-- Step 1 -->
+                <div class="flex flex-col items-center gap-2 px-2" style="background: transparent;">
+                    <div class="w-10 h-10 rounded-full bg-emerald text-white flex items-center justify-center font-bold shadow-md">1</div>
+                    <span class="font-label text-xs text-emerald font-bold uppercase tracking-wider">Describe</span>
+                </div>
+                <!-- Step 2 -->
+                <div class="flex flex-col items-center gap-2 px-2" style="background: transparent;">
+                    <div class="w-10 h-10 rounded-full bg-white border-2 border-slate-300 text-slate-400 flex items-center justify-center font-bold">2</div>
+                    <span class="font-label text-xs text-slate-400 uppercase tracking-wider">Evidence</span>
+                </div>
+                <!-- Step 3 -->
+                <div class="flex flex-col items-center gap-2 px-2" style="background: transparent;">
+                    <div class="w-10 h-10 rounded-full bg-white border-2 border-slate-300 text-slate-400 flex items-center justify-center font-bold">3</div>
+                    <span class="font-label text-xs text-slate-400 uppercase tracking-wider">Review</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-2xl mx-auto glass-panel rounded-2xl p-8 shadow-xl relative overflow-hidden">
+            <!-- Top highlight -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald to-teal-500"></div>
+
+            <h1 class="font-headline text-2xl font-bold text-slate-900 mb-2">Incident Details</h1>
+            <p class="font-body text-sm text-slate-600 mb-8 border-b border-slate-200 pb-4">Please provide as much detail as possible to assist the investigation. Your data is encrypted and secure.</p>
+
+            <form id="report-form" class="space-y-6">
+                <div>
+                    <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Incident Type</label>
+                    <select id="incident-type" class="glass-input w-full rounded-lg px-4 py-3" required>
+                        <option value="" disabled selected>Select an incident type</option>
+                        <option value="Vehicle Collision">Vehicle Collision</option>
+                        <option value="Vandalism">Vandalism</option>
+                        <option value="Theft">Theft</option>
+                        <option value="Suspicious Activity">Suspicious Activity</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Location</label>
+                    <div class="flex gap-2">
+                        <input id="incident-location" type="text" class="glass-input w-full rounded-lg px-4 py-3 flex-1" placeholder="E.g., Intersection of 5th and Main" required/>
+                        <button type="button" id="locate-btn" class="bg-slate-100 text-slate-700 px-4 py-3 rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center border border-slate-300 shadow-sm group shrink-0" title="Use My Location">
+                            <span class="material-symbols-outlined text-emerald group-hover:scale-110 transition-transform">my_location</span>
+                        </button>
+                    </div>
+                    <div id="location-status" class="text-xs mt-2 text-slate-500 hidden"></div>
+                    <input type="hidden" id="incident-jurisdiction" value="">
+                </div>
+                
+                <div>
+                    <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Description</label>
+                    <textarea id="incident-desc" rows="5" class="glass-input w-full rounded-lg px-4 py-3 resize-y" placeholder="Describe what happened in detail..." required></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-200 pt-6 mt-6">
+                    <h3 class="font-headline font-bold text-slate-800 md:col-span-2">Vehicle Details</h3>
+                    <div>
+                        <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Licence Plate</label>
+                        <input id="veh-plate" type="text" class="glass-input w-full rounded-lg px-4 py-3" placeholder="e.g. 1234 XY">
+                    </div>
+                    <div>
+                        <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Chassis / VIN Number</label>
+                        <input id="veh-vin" type="text" class="glass-input w-full rounded-lg px-4 py-3" placeholder="17-character VIN">
+                    </div>
+                    <div>
+                        <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Make</label>
+                        <input id="veh-make" type="text" class="glass-input w-full rounded-lg px-4 py-3" placeholder="e.g. Toyota">
+                    </div>
+                    <div>
+                        <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Model</label>
+                        <input id="veh-model" type="text" class="glass-input w-full rounded-lg px-4 py-3" placeholder="e.g. Vitz">
+                    </div>
+                    <div>
+                        <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Color</label>
+                        <input id="veh-color" type="text" class="glass-input w-full rounded-lg px-4 py-3" placeholder="e.g. Silver">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-200 pt-6 mt-6">
+                    <h3 class="font-headline font-bold text-slate-800 md:col-span-2">Witness Details (Optional)</h3>
+                    <div>
+                        <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Witness Name</label>
+                        <input id="wit-name" type="text" class="glass-input w-full rounded-lg px-4 py-3" placeholder="Full Name">
+                    </div>
+                    <div>
+                        <label class="block font-label text-xs font-bold mb-2 uppercase tracking-wider text-slate-700">Witness Phone</label>
+                        <input id="wit-phone" type="tel" class="glass-input w-full rounded-lg px-4 py-3" placeholder="e.g. 876-123-4567">
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-200 flex justify-end">
+                    <button type="submit" class="bg-emerald text-white font-bold font-label px-8 py-3 rounded-lg hover:bg-emerald/90 transition-all shadow-md flex items-center gap-2 group">
+                        Next: Evidence
+                        <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script type="module">
+        import { auth, signOut } from './firebase-config.js';
+
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        document.getElementById('mobile-logout-btn').addEventListener('click', () => {
+            signOut(auth).then(() => window.location.href = 'login.html');
+        });
+
+        const handlePortalSwitch = async (e) => {
+            e.preventDefault();
+            const user = auth.currentUser;
+            if (user) {
+                try {
+                    const tokenResult = await user.getIdTokenResult();
+                    const role = tokenResult.claims.role || 'civilian';
+                    if (role === 'admin') {
+                        window.location.href = 'admin_dashboard.html';
+                    } else if (role === 'officer') {
+                        window.location.href = 'officer_feed.html';
+                    } else {
+                        alert("Access Denied: You do not have permission to access the management portal.");
+                    }
+                } catch (err) {}
+            }
+        };
+        
+        const pd = document.getElementById('portal-link-desktop');
+        if (pd) pd.addEventListener('click', handlePortalSwitch);
+        const pm = document.getElementById('portal-link-mobile');
+        if (pm) pm.addEventListener('click', handlePortalSwitch);
+
+        // Pre-fill if going back
+        const typeSelect = document.getElementById('incident-type');
+        const locInput = document.getElementById('incident-location');
+        const descInput = document.getElementById('incident-desc');
+        const jurInput = document.getElementById('incident-jurisdiction');
+        const locateBtn = document.getElementById('locate-btn');
+        const locStatus = document.getElementById('location-status');
+
+        typeSelect.value = sessionStorage.getItem('incidentType') || '';
+        locInput.value = sessionStorage.getItem('incidentLocation') || '';
+        descInput.value = sessionStorage.getItem('incidentDesc') || '';
+        jurInput.value = sessionStorage.getItem('incidentJurisdiction') || '';
+
+        // Geolocation Logic
+        locateBtn.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                locStatus.textContent = "Geolocation is not supported by your browser.";
+                locStatus.classList.remove('hidden');
+                locStatus.classList.add('text-amber-600');
+                return;
+            }
+
+            locStatus.classList.remove('hidden', 'text-amber-600', 'text-emerald-600', 'text-red-500');
+            locStatus.classList.add('text-slate-500');
+            locStatus.innerHTML = '<span class="material-symbols-outlined animate-spin text-[14px] align-middle mr-1">autorenew</span> Fetching coordinates...';
+            locateBtn.disabled = true;
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                
+                locStatus.innerHTML = '<span class="material-symbols-outlined animate-spin text-[14px] align-middle mr-1">autorenew</span> Reverse geocoding...';
+
+                try {
+                    // Use OpenStreetMap Nominatim API
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`);
+                    const data = await res.json();
+                    
+                    if (data && data.address) {
+                        const parish = data.address.state || data.address.county || data.address.city || "Unknown Parish";
+                        const road = data.address.road || "Unknown Road";
+                        const suburb = data.address.suburb || data.address.neighbourhood || "";
+                        
+                        const fullAddr = `${road}${suburb ? ', ' + suburb : ''}, ${parish}`;
+                        locInput.value = fullAddr;
+                        jurInput.value = parish; // Save parish for routing
+
+                        locStatus.innerHTML = `<span class="material-symbols-outlined text-[14px] align-middle mr-1">check_circle</span> Location detected in ${parish}`;
+                        locStatus.classList.replace('text-slate-500', 'text-emerald-600');
+                    } else {
+                        throw new Error("Could not parse address");
+                    }
+                } catch (error) {
+                    locStatus.textContent = "Failed to translate coordinates to address. Please type it manually.";
+                    locStatus.classList.replace('text-slate-500', 'text-amber-600');
+                    jurInput.value = "Unknown";
+                } finally {
+                    locateBtn.disabled = false;
+                }
+            }, (error) => {
+                locStatus.textContent = "Location access denied or failed. Please type it manually.";
+                locStatus.classList.replace('text-slate-500', 'text-amber-600');
+                locateBtn.disabled = false;
+            }, { timeout: 10000 });
+        });
+
+        document.getElementById('report-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            sessionStorage.setItem('incidentType', typeSelect.value);
+            sessionStorage.setItem('incidentLocation', locInput.value);
+            sessionStorage.setItem('incidentDesc', descInput.value);
+            sessionStorage.setItem('incidentJurisdiction', jurInput.value || 'Unknown');
+
+            const vehicleDetails = {
+                plate: document.getElementById('veh-plate').value,
+                vin: document.getElementById('veh-vin').value,
+                make: document.getElementById('veh-make').value,
+                model: document.getElementById('veh-model').value,
+                color: document.getElementById('veh-color').value
+            };
+            sessionStorage.setItem('vehicleDetails', JSON.stringify(vehicleDetails));
+
+            const witnessName = document.getElementById('wit-name').value;
+            const witnessPhone = document.getElementById('wit-phone').value;
+            if (witnessName || witnessPhone) {
+                sessionStorage.setItem('witnesses', JSON.stringify([{ name: witnessName, phone: witnessPhone }]));
+            } else {
+                sessionStorage.removeItem('witnesses');
+            }
+
+            window.location.href = 'civilian_upload.html';
+        });
+
+        document.getElementById('cancel-btn').addEventListener('click', () => {
+            if (confirm("Are you sure you want to cancel? Your progress will be lost.")) {
+                window.location.href = 'civilian_dashboard.html';
+            }
+        });
+
+        auth.onAuthStateChanged(user => {
+            if (!user) window.location.href = 'login.html';
+        });
+    </script>
+</body>
+</html>

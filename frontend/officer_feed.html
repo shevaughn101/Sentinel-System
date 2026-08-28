@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Officer Feed - Sentinel Civic Response</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: "#10b981",
+                        amber: "#f59e0b"
+                    },
+                    fontFamily: {
+                        "headline": ["Public Sans"],
+                        "body": ["Public Sans"],
+                        "label": ["Atkinson Hyperlegible Next"]
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05); }
+        body { background: radial-gradient(circle at top right, #f8fafc, #e2e8f0); background-attachment: fixed; color: #0f172a; }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="font-body min-h-screen pt-16 antialiased flex flex-col">
+    <!-- Navbar -->
+    <header class="fixed top-0 w-full z-50 glass-panel border-b border-slate-200 h-16 px-6 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center shadow-md">
+                <span class="material-symbols-outlined text-[20px]">local_police</span>
+            </div>
+            <span class="font-headline font-bold text-lg text-slate-900 tracking-wide">Officer Feed</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span id="officer-email" class="text-sm font-label font-bold text-slate-500 hidden sm:block"></span>
+            <button id="logout-btn" class="text-slate-500 hover:text-red-500 transition-colors text-sm font-bold tracking-wider uppercase flex items-center gap-1">
+                Logout <span class="material-symbols-outlined text-sm">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-[1000px] w-full mx-auto px-4 sm:px-6 py-8 animate-fade-in">
+        <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h1 class="font-headline text-3xl font-bold text-slate-900">Incident Feed</h1>
+                <p id="jurisdiction-label" class="text-slate-500 text-sm mt-1">Loading jurisdiction...</p>
+            </div>
+            <div class="flex items-center gap-2 bg-white rounded-lg p-1 shadow-sm border border-slate-200">
+                <button class="px-4 py-2 text-sm font-bold rounded-md bg-emerald text-white">All</button>
+                <button class="px-4 py-2 text-sm font-bold rounded-md text-slate-500 hover:bg-slate-50">Pending</button>
+            </div>
+        </div>
+
+        <div id="incidents-feed" class="space-y-6">
+            <!-- Loading skeleton -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 animate-pulse">
+                <div class="h-6 w-1/4 bg-slate-200 rounded mb-4"></div>
+                <div class="h-4 w-1/2 bg-slate-200 rounded mb-2"></div>
+                <div class="h-4 w-1/3 bg-slate-200 rounded"></div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { auth, apiFetch } from './firebase-config.js';
+        import { signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth).then(() => window.location.href = 'login.html');
+        });
+
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                document.getElementById('officer-email').textContent = user.email;
+                try {
+                    const tokenResult = await user.getIdTokenResult();
+                    const role = tokenResult.claims.role;
+                    if (role !== 'officer' && role !== 'admin') {
+                        window.location.href = 'civilian_dashboard.html';
+                        return;
+                    }
+                    const jur = tokenResult.claims.jurisdiction || 'Unknown';
+                    document.getElementById('jurisdiction-label').innerHTML = `Jurisdiction: <span class="font-bold text-slate-700">${jur}</span>`;
+                    
+                    loadIncidents();
+                } catch (e) {
+                    console.error(e);
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        window.updateStatus = async function(incidentId, status) {
+            try {
+                const response = await apiFetch(`http://localhost:8000/api/officer/incidents/${incidentId}/status`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status })
+                });
+                if (!response.ok) throw new Error("Update failed");
+                loadIncidents();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function loadIncidents() {
+            try {
+                const response = await apiFetch('http://localhost:8000/api/officer/incidents');
+                if (!response.ok) throw new Error("Failed to fetch incidents");
+                const data = await response.json();
+                
+                const feed = document.getElementById('incidents-feed');
+                feed.innerHTML = '';
+                
+                if (data.incidents.length === 0) {
+                    feed.innerHTML = `<div class="p-12 text-center text-slate-500 font-label bg-white rounded-2xl border border-slate-200">No pending incidents in your jurisdiction.</div>`;
+                    return;
+                }
+                
+                data.incidents.forEach(inc => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative overflow-hidden";
+                    
+                    const statusColors = {
+                        'pending': 'bg-amber-100 text-amber-700 border-amber-200',
+                        'investigating': 'bg-blue-100 text-blue-700 border-blue-200',
+                        'resolved': 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                    };
+                    const sc = statusColors[inc.status] || 'bg-slate-100 text-slate-700';
+
+                    let vehicleSection = '';
+                    if (inc.vehicleDetails && (inc.vehicleDetails.plate || inc.vehicleDetails.vin)) {
+                        vehicleSection = `
+                            <div class="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                                <h4 class="font-label text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Vehicle Details</h4>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                                    <div><span class="text-slate-400 block text-xs">Plate</span><span class="font-bold text-slate-700">${inc.vehicleDetails.plate || '-'}</span></div>
+                                    <div><span class="text-slate-400 block text-xs">Make</span><span class="font-bold text-slate-700">${inc.vehicleDetails.make || '-'} ${inc.vehicleDetails.model || ''}</span></div>
+                                    <div class="col-span-2 sm:col-span-1"><span class="text-slate-400 block text-xs">VIN</span><span class="font-bold font-mono text-xs text-slate-700">${inc.vehicleDetails.vin || '-'}</span></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    let witnessSection = '';
+                    if (inc.witnesses && inc.witnesses.length > 0) {
+                        let wList = inc.witnesses.map(w => `<li><span class="font-bold text-slate-700">${w.name}</span> <span class="text-slate-500 font-mono">(${w.phone})</span></li>`).join('');
+                        witnessSection = `
+                            <div class="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                                <h4 class="font-label text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Witnesses</h4>
+                                <ul class="text-sm list-disc pl-4">${wList}</ul>
+                            </div>
+                        `;
+                    }
+
+                    let docsSection = '';
+                    if (inc.statutoryDocs && inc.statutoryDocs.length > 0) {
+                        let dList = inc.statutoryDocs.map(d => `
+                            <div class="flex items-center justify-between p-2 bg-white border border-slate-200 rounded text-sm mb-2 group">
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-slate-700">${d.name}</span>
+                                    <span class="text-[10px] text-slate-400 font-mono truncate max-w-[200px]" title="SHA-256: ${d.hash}">Hash: ${d.hash.substring(0, 16)}...</span>
+                                </div>
+                                <a href="${d.url}" target="_blank" class="text-emerald hover:text-emerald/80 font-bold font-label flex items-center gap-1"><span class="material-symbols-outlined text-sm">download</span></a>
+                            </div>
+                        `).join('');
+                        docsSection = `
+                            <div class="mt-4">
+                                <h4 class="font-label text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Statutory Documents</h4>
+                                ${dList}
+                            </div>
+                        `;
+                    }
+
+                    let photosSection = '';
+                    if (inc.scenePhotos && inc.scenePhotos.length > 0) {
+                        let pList = inc.scenePhotos.map(p => {
+                            let exifDisplay = p.exif ? `
+                                <div class="text-[10px] mt-2 bg-slate-100 p-2 rounded text-slate-600 font-mono break-words">
+                                    <p><b>Time:</b> ${p.exif.timestamp || 'N/A'}</p>
+                                    <p><b>GPS:</b> ${p.exif.gps ? JSON.stringify(p.exif.gps) : 'N/A'}</p>
+                                </div>
+                            ` : '<div class="text-[10px] mt-2 text-slate-400">No EXIF Data found</div>';
+
+                            return `
+                            <div class="border border-slate-200 rounded overflow-hidden flex flex-col">
+                                <a href="${p.url}" target="_blank" class="block aspect-video bg-slate-100 overflow-hidden relative group">
+                                    <img src="${p.url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                </a>
+                                <div class="p-2 flex-1 flex flex-col">
+                                    <p class="text-[10px] text-slate-400 font-mono truncate mb-1" title="SHA-256: ${p.hash}">Hash: ${p.hash.substring(0, 16)}...</p>
+                                    ${exifDisplay}
+                                </div>
+                            </div>
+                            `;
+                        }).join('');
+                        photosSection = `
+                            <div class="mt-6 border-t border-slate-200 pt-4">
+                                <h4 class="font-label text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Scene Photos (Forensic Data)</h4>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    ${pList}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    const dateObj = new Date(inc.timestamp);
+                    const formattedDate = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString();
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="inline-block px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase border mb-2 ${sc}">
+                                    ${inc.status}
+                                </span>
+                                <h2 class="font-headline text-xl font-bold text-slate-900">${inc.type}</h2>
+                                <p class="text-xs text-slate-500 font-label flex items-center gap-1 mt-1">
+                                    <span class="material-symbols-outlined text-[14px]">calendar_today</span> ${formattedDate}
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <select class="text-xs font-bold font-label bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-700 outline-none focus:border-emerald" onchange="updateStatus('${inc.id}', this.value)">
+                                    <option value="pending" ${inc.status === 'pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="investigating" ${inc.status === 'investigating' ? 'selected' : ''}>Investigating</option>
+                                    <option value="resolved" ${inc.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm border-t border-slate-100 pt-4">
+                            <div>
+                                <p class="text-slate-400 font-label text-xs uppercase tracking-wider font-bold mb-1">Location</p>
+                                <p class="font-bold text-slate-700">${inc.location}</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-400 font-label text-xs uppercase tracking-wider font-bold mb-1">Reported By</p>
+                                <p class="font-mono text-xs text-slate-500 break-all">${inc.reported_by}</p>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <p class="text-slate-400 font-label text-xs uppercase tracking-wider font-bold mb-1">Description</p>
+                            <p class="text-slate-700 bg-slate-50 p-4 rounded-lg border border-slate-100 whitespace-pre-wrap">${inc.description}</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${vehicleSection}
+                            ${witnessSection}
+                        </div>
+                        
+                        ${docsSection}
+                        ${photosSection}
+                    `;
+                    feed.appendChild(card);
+                });
+                
+            } catch (err) {
+                console.error(err);
+                document.getElementById('incidents-feed').innerHTML = `<div class="p-8 text-center text-red-500 font-label">Error loading feed: ${err.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
