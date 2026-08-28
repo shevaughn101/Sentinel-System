@@ -1,6 +1,7 @@
 import os
 import hashlib
 import uuid
+import json
 from io import BytesIO
 from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,10 +26,16 @@ app.add_middleware(
 )
 
 # Initialize Firebase Admin SDK
-cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "firebase-credentials.json")
 try:
-    if not firebase_admin._apps:
+    firebase_env_creds = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+    if firebase_env_creds:
+        cred_dict = json.loads(firebase_env_creds)
+        cred = credentials.Certificate(cred_dict)
+    else:
+        cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "firebase-credentials.json")
         cred = credentials.Certificate(cred_path)
+        
+    if not firebase_admin._apps:
         firebase_admin.initialize_app(cred, {
             'storageBucket': 'incidentplatform.firebasestorage.app'
         })
