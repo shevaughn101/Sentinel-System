@@ -11,15 +11,25 @@ from firebase_admin import credentials, firestore, auth, storage
 from google.cloud.firestore_v1.base_query import FieldFilter
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
-from typing import List
+from typing import List, Optional
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from fastapi import Request
+
+# Setup Rate Limiter
+limiter = Limiter(key_func=get_remote_address)
 
 # Initialize FastAPI
 app = FastAPI(title="Sentinel Civic Response API")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Setup CORS for local development
+# Setup CORS for deployment
+ALLOWED_ORIGINS = os.environ.get("FRONTEND_URLS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,7 +66,8 @@ def verify_firebase_token(authorization: str = Header(...)):
     
     token = authorization.split(" ")[1]
     try:
-        decoded_token = auth.verify_id_token(token)
+        # check_revoked=True guarantees active tokens are instantly rejected if the account is disabled
+        decoded_token = auth.verify_id_token(token, check_revoked=True)
         
         # Super Admin Bootstrap Logic
         if decoded_token.get("email") == "contactshevaughn124@gmail.com":
@@ -107,6 +118,16 @@ def extract_exif(image_bytes: bytes):
     except Exception:
         return None
 
+def verify_magic_bytes(contents: bytes, content_type: str) -> bool:
+    """Verifies that the file actually matches its declared MIME type via magic bytes"""
+    if content_type == "image/jpeg":
+        return contents.startswith(b'\xff\xd8\xff')
+    elif content_type == "image/png":
+        return contents.startswith(b'\x89PNG\r\n\x1a\n')
+    elif content_type == "application/pdf":
+        return contents.startswith(b'%PDF-')
+    return False
+
 # -----------------
 # Pydantic Models
 # -----------------
@@ -116,6 +137,8 @@ class IncidentReport(BaseModel):
     jurisdiction: str
     description: str
     timestamp: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     vehicleDetails: dict = {}
     witnesses: list = []
     statutoryDocs: list = []
@@ -173,7 +196,8 @@ async def get_officers(admin_token: dict = Depends(require_admin)):
             })
         return {"officers": officers}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error fetching officers: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.put("/api/admin/users/{uid}/role")
 async def update_user_role(uid: str, update: RoleUpdate, admin_token: dict = Depends(require_admin)):
@@ -184,7 +208,9 @@ async def update_user_role(uid: str, update: RoleUpdate, admin_token: dict = Dep
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/upload")
+@limiter.limit("10/minute")
 async def upload_files(
+    request: Request,
     files: List[UploadFile] = File(...), 
     user_token: dict = Depends(require_civilian)
 ):
@@ -203,6 +229,10 @@ async def upload_files(
         # Validate MIME
         if file.content_type not in ["image/jpeg", "image/png", "application/pdf"]:
             raise HTTPException(status_code=400, detail=f"File {file.filename} has unsupported type {file.content_type}")
+            
+        # Cryptographic Magic Bytes Check
+        if not verify_magic_bytes(contents, file.content_type):
+            raise HTTPException(status_code=400, detail=f"File {file.filename} failed integrity check. Spoofed extension detected.")
             
         # Hash
         sha256_hash = hashlib.sha256(contents).hexdigest()
@@ -232,7 +262,8 @@ async def upload_files(
     return {"files": results}
 
 @app.post("/api/incidents")
-async def create_incident(report: IncidentReport, user_token: dict = Depends(require_civilian)):
+@limiter.limit("5/minute")
+async def create_incident(request: Request, report: IncidentReport, user_token: dict = Depends(require_civilian)):
     if not db:
         raise HTTPException(status_code=503, detail="Database not configured")
     
@@ -245,7 +276,8 @@ async def create_incident(report: IncidentReport, user_token: dict = Depends(req
         doc_ref.set(report_dict)
         return {"message": "Incident reported successfully", "id": doc_ref.id}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error creating incident: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.get("/api/my-incidents")
 async def get_my_incidents(user_token: dict = Depends(require_civilian)):
@@ -266,7 +298,7 @@ async def get_my_incidents(user_token: dict = Depends(require_civilian)):
         return {"incidents": incidents}
     except Exception as e:
         print(f"Error in my-incidents: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.get("/api/officer/incidents")
 async def get_incidents(user_token: dict = Depends(require_officer)):
@@ -293,7 +325,7 @@ async def get_incidents(user_token: dict = Depends(require_officer)):
         return {"incidents": incidents}
     except Exception as e:
         print(f"Error in officer/incidents: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.put("/api/officer/incidents/{incident_id}/status")
 async def update_incident_status(incident_id: str, payload: dict, user_token: dict = Depends(require_officer)):
@@ -304,4 +336,5 @@ async def update_incident_status(incident_id: str, payload: dict, user_token: di
         doc_ref.update({"status": payload.get("status")})
         return {"message": "Status updated"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error updating incident status: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
