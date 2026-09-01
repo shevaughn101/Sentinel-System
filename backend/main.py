@@ -219,47 +219,53 @@ async def upload_files(
         
     results = []
     
-    for file in files:
-        contents = await file.read()
-        
-        # Validate size (10MB)
-        if len(contents) > 10 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail=f"File {file.filename} exceeds 10MB limit")
+    try:
+        for file in files:
+            contents = await file.read()
             
-        # Validate MIME
-        if file.content_type not in ["image/jpeg", "image/png", "application/pdf"]:
-            raise HTTPException(status_code=400, detail=f"File {file.filename} has unsupported type {file.content_type}")
+            # Validate size (10MB)
+            if len(contents) > 10 * 1024 * 1024:
+                raise HTTPException(status_code=400, detail=f"File {file.filename} exceeds 10MB limit")
+                
+            # Validate MIME
+            if file.content_type not in ["image/jpeg", "image/png", "application/pdf"]:
+                raise HTTPException(status_code=400, detail=f"File {file.filename} has unsupported type {file.content_type}")
+                
+            # Cryptographic Magic Bytes Check
+            if not verify_magic_bytes(contents, file.content_type):
+                raise HTTPException(status_code=400, detail=f"File {file.filename} failed integrity check. Spoofed extension detected.")
+                
+            # Hash
+            sha256_hash = hashlib.sha256(contents).hexdigest()
             
-        # Cryptographic Magic Bytes Check
-        if not verify_magic_bytes(contents, file.content_type):
-            raise HTTPException(status_code=400, detail=f"File {file.filename} failed integrity check. Spoofed extension detected.")
+            # EXIF
+            exif_data = None
+            if file.content_type in ["image/jpeg", "image/png"]:
+                exif_data = extract_exif(contents)
+                
+            # Upload
+            unique_name = f"{user_token.get('uid')}/{uuid.uuid4()}_{file.filename}"
+            blob = bucket.blob(unique_name)
             
-        # Hash
-        sha256_hash = hashlib.sha256(contents).hexdigest()
-        
-        # EXIF
-        exif_data = None
-        if file.content_type in ["image/jpeg", "image/png"]:
-            exif_data = extract_exif(contents)
+            # Ensure correct content type is set on the blob
+            blob.upload_from_string(contents, content_type=file.content_type)
+            blob.make_public()
             
-        # Upload
-        unique_name = f"{user_token.get('uid')}/{uuid.uuid4()}_{file.filename}"
-        blob = bucket.blob(unique_name)
-        
-        # Ensure correct content type is set on the blob
-        blob.upload_from_string(contents, content_type=file.content_type)
-        blob.make_public()
-        
-        results.append({
-            "name": file.filename,
-            "url": blob.public_url,
-            "hash": sha256_hash,
-            "size": len(contents),
-            "type": file.content_type,
-            "exif": exif_data
-        })
-        
-    return {"files": results}
+            results.append({
+                "name": file.filename,
+                "url": blob.public_url,
+                "hash": sha256_hash,
+                "size": len(contents),
+                "type": file.content_type,
+                "exif": exif_data
+            })
+            
+        return {"message": "Files securely processed", "files": results}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"File upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal upload error: {str(e)}")
 
 @app.post("/api/incidents")
 @limiter.limit("5/minute")
