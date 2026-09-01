@@ -140,6 +140,7 @@ class IncidentReport(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     vehicleDetails: dict = {}
+    involvedParties: list = []
     witnesses: list = []
     statutoryDocs: list = []
     scenePhotos: list = []
