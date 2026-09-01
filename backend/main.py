@@ -26,7 +26,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Setup CORS for deployment
-ALLOWED_ORIGINS = os.environ.get("FRONTEND_URLS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+ALLOWED_ORIGINS = os.environ.get("FRONTEND_URLS", "https://sentinel-frontend-olive.vercel.app,http://localhost:3000,http://127.0.0.1:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
