@@ -3,6 +3,7 @@ import hashlib
 import uuid
 import json
 from io import BytesIO
+from datetime import timedelta
 from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
@@ -95,6 +96,20 @@ def require_civilian(token: dict = Depends(verify_firebase_token)):
 # -----------------
 # Utility Functions
 # -----------------
+def refresh_signed_urls(incident_data):
+    """Refreshes Signed URLs for any evidence containing a blob_name."""
+    if not bucket: return
+    
+    for field in ['scenePhotos', 'statutoryDocs']:
+        if field in incident_data and isinstance(incident_data[field], list):
+            for file_obj in incident_data[field]:
+                if 'blob_name' in file_obj:
+                    try:
+                        blob = bucket.blob(file_obj['blob_name'])
+                        file_obj['url'] = blob.generate_signed_url(version="v4", expiration=timedelta(hours=1), method="GET")
+                    except Exception as e:
+                        print(f"Error generating signed url: {e}")
+
 def extract_exif(image_bytes: bytes):
     """Extracts EXIF timestamp and GPS data from image bytes safely."""
     try:
@@ -250,11 +265,14 @@ async def upload_files(
             
             # Ensure correct content type is set on the blob
             blob.upload_from_string(contents, content_type=file.content_type)
-            blob.make_public()
+            
+            # Generate a 1-hour Signed URL for immediate frontend preview
+            signed_url = blob.generate_signed_url(version="v4", expiration=timedelta(hours=1), method="GET")
             
             results.append({
                 "name": file.filename,
-                "url": blob.public_url,
+                "url": signed_url,
+                "blob_name": unique_name,
                 "hash": sha256_hash,
                 "size": len(contents),
                 "type": file.content_type,
@@ -298,6 +316,7 @@ async def get_my_incidents(user_token: dict = Depends(require_civilian)):
         for doc in docs:
             incident_data = doc.to_dict()
             incident_data['id'] = doc.id
+            refresh_signed_urls(incident_data)
             incidents.append(incident_data)
         
         # Sort by timestamp descending
@@ -325,6 +344,7 @@ async def get_incidents(user_token: dict = Depends(require_officer)):
         for doc in docs:
             incident_data = doc.to_dict()
             incident_data['id'] = doc.id
+            refresh_signed_urls(incident_data)
             incidents.append(incident_data)
             
         # Sort by timestamp descending
