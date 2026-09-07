@@ -215,6 +215,22 @@ async def get_officers(admin_token: dict = Depends(require_admin)):
         print(f"Error fetching officers: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
+@app.get("/api/officers/list")
+async def get_officers_list(user_token: dict = Depends(require_officer)):
+    """Returns a lightweight list of officers for the assignment dropdown"""
+    try:
+        page = auth.list_users()
+        officers = []
+        for user in page.users:
+            if user.custom_claims and user.custom_claims.get("role") == "officer":
+                officers.append({
+                    "email": user.email,
+                    "jurisdiction": user.custom_claims.get("jurisdiction", "Unknown")
+                })
+        return {"officers": officers}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.put("/api/admin/users/{uid}/role")
 async def update_user_role(uid: str, update: RoleUpdate, admin_token: dict = Depends(require_admin)):
     try:
@@ -360,7 +376,14 @@ async def update_incident_status(incident_id: str, payload: dict, user_token: di
         raise HTTPException(status_code=503, detail="Database not configured")
     try:
         doc_ref = db.collection('incidents').document(incident_id)
-        doc_ref.update({"status": payload.get("status")})
+        
+        update_data = {}
+        if "status" in payload:
+            update_data["status"] = payload["status"]
+        if "assigned_to" in payload:
+            update_data["assigned_to"] = payload["assigned_to"]
+            
+        doc_ref.update(update_data)
         return {"message": "Status updated"}
     except Exception as e:
         print(f"Error updating incident status: {e}")
