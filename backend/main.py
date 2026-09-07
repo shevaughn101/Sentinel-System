@@ -83,6 +83,11 @@ def verify_firebase_token(authorization: str = Header(...)):
         raise HTTPException(status_code=401, detail=f"Unauthorized: {str(e)}")
 
 def require_admin(token: dict = Depends(verify_firebase_token)):
+    if token.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    return token
+
+def require_admin_or_officer(token: dict = Depends(verify_firebase_token)):
     if token.get("role") not in ["admin", "officer"]:
         raise HTTPException(status_code=403, detail="Admin or Officer privileges required")
     return token
@@ -232,7 +237,7 @@ async def create_officer(officer: OfficerCreate, admin_token: dict = Depends(req
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/admin/officers")
-async def get_officers(admin_token: dict = Depends(require_admin)):
+async def get_officers(admin_token: dict = Depends(require_admin_or_officer)):
     try:
         page = auth.list_users()
         officers = []
