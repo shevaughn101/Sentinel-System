@@ -83,8 +83,8 @@ def verify_firebase_token(authorization: str = Header(...)):
         raise HTTPException(status_code=401, detail=f"Unauthorized: {str(e)}")
 
 def require_admin(token: dict = Depends(verify_firebase_token)):
-    if token.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin privileges required")
+    if token.get("role") not in ["admin", "officer"]:
+        raise HTTPException(status_code=403, detail="Admin or Officer privileges required")
     return token
 
 def require_officer(token: dict = Depends(verify_firebase_token)):
@@ -414,20 +414,24 @@ async def get_incidents(user_token: dict = Depends(require_officer)):
         raise HTTPException(status_code=503, detail="Database not configured")
         
     try:
-        query = db.collection('incidents')
-        if user_token.get("role") != "admin":
-            officer_jurisdiction = user_token.get("jurisdiction")
-            if officer_jurisdiction and officer_jurisdiction != "National":
-                query = query.where(filter=FieldFilter("jurisdiction", "==", officer_jurisdiction))
-                
-        # Fetch without order_by to avoid composite index requirement, then sort in memory
-        docs = query.stream()
+        officer_jurisdiction = user_token.get("jurisdiction")
+        officer_email = user_token.get("email")
+        
+        # Fetch without order_by to avoid composite index requirement
+        docs = db.collection('incidents').stream()
         incidents = []
         for doc in docs:
             incident_data = doc.to_dict()
-            incident_data['id'] = doc.id
-            refresh_signed_urls(incident_data)
-            incidents.append(incident_data)
+            
+            # Filter in Python: show if Admin, National, matching jurisdiction, OR assigned to this officer
+            is_admin_or_national = user_token.get("role") == "admin" or officer_jurisdiction == "National"
+            is_matching_jur = incident_data.get("jurisdiction") == officer_jurisdiction
+            is_assigned_to_me = incident_data.get("assigned_to") == officer_email
+            
+            if is_admin_or_national or is_matching_jur or is_assigned_to_me:
+                incident_data['id'] = doc.id
+                refresh_signed_urls(incident_data)
+                incidents.append(incident_data)
             
         # Sort by timestamp descending
         incidents.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
