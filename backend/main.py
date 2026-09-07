@@ -4,7 +4,7 @@ import uuid
 import json
 from io import BytesIO
 from datetime import timedelta
-from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File, Form, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 import firebase_admin
@@ -16,7 +16,6 @@ from typing import List, Optional
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from fastapi import Request
 
 # Setup Rate Limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -104,11 +103,8 @@ def refresh_signed_urls(incident_data):
         if field in incident_data and isinstance(incident_data[field], list):
             for file_obj in incident_data[field]:
                 if 'blob_name' in file_obj:
-                    try:
-                        blob = bucket.blob(file_obj['blob_name'])
-                        file_obj['url'] = blob.generate_signed_url(version="v4", expiration=timedelta(hours=1), method="GET")
-                    except Exception as e:
-                        print(f"Error generating signed url: {e}")
+                    # Route through our secure FastAPI proxy instead of relying on GCP IAM roles!
+                    file_obj['url'] = f"https://sentinel-system-nfqp.onrender.com/api/evidence/{file_obj['blob_name']}"
 
 def extract_exif(image_bytes: bytes):
     """Extracts EXIF timestamp and GPS data from image bytes safely."""
@@ -239,6 +235,34 @@ async def update_user_role(uid: str, update: RoleUpdate, admin_token: dict = Dep
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@app.get("/api/evidence/{uid}/{filename}")
+async def get_evidence(uid: str, filename: str, user_token: dict = Depends(require_officer)):
+    """Internal proxy endpoint to fetch evidence securely, bypassing GCP IAM issues"""
+    if not bucket:
+        raise HTTPException(status_code=503, detail="Storage not configured")
+    try:
+        blob = bucket.blob(f"{uid}/{filename}")
+        if not blob.exists():
+            raise HTTPException(status_code=404, detail="Evidence not found")
+            
+        content = blob.download_as_bytes()
+        
+        # Determine content type based on extension
+        content_type = "application/octet-stream"
+        if filename.lower().endswith(".jpg") or filename.lower().endswith(".jpeg"):
+            content_type = "image/jpeg"
+        elif filename.lower().endswith(".png"):
+            content_type = "image/png"
+        elif filename.lower().endswith(".pdf"):
+            content_type = "application/pdf"
+            
+        return Response(content=content, media_type=content_type)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching evidence: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load evidence")
+
 @app.post("/api/upload")
 @limiter.limit("10/minute")
 async def upload_files(
@@ -282,12 +306,12 @@ async def upload_files(
             # Ensure correct content type is set on the blob
             blob.upload_from_string(contents, content_type=file.content_type)
             
-            # Generate a 1-hour Signed URL for immediate frontend preview
-            signed_url = blob.generate_signed_url(version="v4", expiration=timedelta(hours=1), method="GET")
+            # Use internal proxy URL instead of GCP signed URL
+            proxy_url = f"https://sentinel-system-nfqp.onrender.com/api/evidence/{unique_name}"
             
             results.append({
                 "name": file.filename,
-                "url": signed_url,
+                "url": proxy_url,
                 "blob_name": unique_name,
                 "hash": sha256_hash,
                 "size": len(contents),
