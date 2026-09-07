@@ -456,6 +456,8 @@ async def update_incident_status(incident_id: str, payload: dict, user_token: di
         if "status" in payload:
             update_data["status"] = payload["status"]
         if "assigned_to" in payload:
+            if user_token.get("role") != "admin":
+                raise HTTPException(status_code=403, detail="Only admins can reassign incidents")
             update_data["assigned_to"] = payload["assigned_to"]
             
         doc_ref.update(update_data)
