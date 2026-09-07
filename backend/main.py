@@ -2,6 +2,9 @@ import os
 import hashlib
 import uuid
 import json
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from io import BytesIO
 from datetime import timedelta
 from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File, Form, Response, Request
@@ -139,6 +142,45 @@ def verify_magic_bytes(contents: bytes, content_type: str) -> bool:
         return contents.startswith(b'%PDF-')
     return False
 
+def send_assignment_email(officer_email: str, incident_id: str):
+    """Sends an email notification to the assigned officer."""
+    sender = os.environ.get("EMAIL_SENDER")
+    password = os.environ.get("EMAIL_APP_PASSWORD")
+    
+    if not sender or not password:
+        print("Email credentials not configured. Skipping notification.")
+        return
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"New Case Assigned: Incident {incident_id[:8].upper()}"
+        msg["From"] = sender
+        msg["To"] = officer_email
+
+        html = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2 style="color: #0f172a;">Sentinel Incident Management</h2>
+            <p>You have been assigned to a new incident.</p>
+            <p><strong>Incident ID:</strong> {incident_id}</p>
+            <p>Please log in to your Officer Dashboard to review the details and secure evidence.</p>
+            <br>
+            <p style="color: #64748b; font-size: 12px;">This is an automated message. Do not reply.</p>
+          </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(html, "html"))
+        
+        # Connect securely to Gmail SMTP
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender, password)
+            server.sendmail(sender, officer_email, msg.as_string())
+            
+        print(f"Notification sent to {officer_email}")
+    except Exception as e:
+        print(f"Error sending email to {officer_email}: {e}")
+
 # -----------------
 # Pydantic Models
 # -----------------
@@ -218,7 +260,7 @@ async def get_officers_list(user_token: dict = Depends(require_officer)):
         page = auth.list_users()
         officers = []
         for user in page.users:
-            if user.custom_claims and user.custom_claims.get("role") == "officer":
+            if user.custom_claims and user.custom_claims.get("role") in ["officer", "admin"]:
                 officers.append({
                     "email": user.email,
                     "jurisdiction": user.custom_claims.get("jurisdiction", "Unknown")
@@ -408,6 +450,10 @@ async def update_incident_status(incident_id: str, payload: dict, user_token: di
             update_data["assigned_to"] = payload["assigned_to"]
             
         doc_ref.update(update_data)
+        
+        if "assigned_to" in payload and payload["assigned_to"]:
+            send_assignment_email(payload["assigned_to"], incident_id)
+            
         return {"message": "Status updated"}
     except Exception as e:
         print(f"Error updating incident status: {e}")
