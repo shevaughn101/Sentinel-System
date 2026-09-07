@@ -50,7 +50,7 @@ try:
         
     if not firebase_admin._apps:
         firebase_admin.initialize_app(cred, {
-            'storageBucket': 'incidentplatform.firebasestorage.app'
+            'storageBucket': 'incidentplatform.appspot.com'
         })
     db = firestore.client()
     bucket = storage.bucket()
